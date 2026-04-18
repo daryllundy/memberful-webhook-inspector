@@ -304,51 +304,95 @@ Keep it that small. Do not add a `cli.py`, `config.py`, `models.py`, etc. unless
 
 ---
 
-## Tests
+## Proof and polish tasks
 
-Required tests in `tests/test_verify.py`:
+### Task 7 — signature verification tests
 
-1. **Valid signature passes.** Compute a known HMAC over a known body with a known secret; assert `verify_signature(body, sig, secret)` returns `True`.
-2. **Tampered body fails.** Compute the signature over body A, then call verify with body B and the signature for A. Must return `False`.
-3. **Tampered signature fails.** Flip a single character in the signature. Must return `False`.
-4. **Wrong secret fails.** Verify with a different secret. Must return `False`.
-5. **Empty signature fails.** Pass an empty string as the signature. Must return `False`.
+**Priority:** P2
 
-Use `pytest`. No fixtures needed; these are one-liners.
+**Goal:** Prove the HMAC helper works for the important success and failure cases.
 
-End-to-end testing is manual (use `curl` or the Memberful dashboard's "Send test webhook" button, documented in the README).
+**Deliverables:**
 
----
+- [ ] `tests/__init__.py`.
+- [ ] `tests/test_verify.py`.
+- [ ] Use `pytest`.
+- [ ] Keep tests direct; no fixtures are needed.
 
-## README requirements
+**Required test cases:**
 
-The README is part of the deliverable. It must include, in this order:
+- [ ] Valid signature passes: compute a known HMAC over a known body with a known secret and assert `verify_signature(body, sig, secret)` returns `True`.
+- [ ] Tampered body fails: compute the signature over body A, then verify body B with the signature for A.
+- [ ] Tampered signature fails: flip a single character in the signature.
+- [ ] Wrong secret fails: verify with a different secret.
+- [ ] Empty signature fails: pass an empty string as the signature.
 
-1. **One-sentence description** + a small "What it looks like" terminal screenshot or copy-pasted output block.
-2. **Why I built this** — 2–3 sentences. Frame it honestly: built during a Memberful product trial to make it easier to understand what events fire when. Mention that it surfaced [some specific small insight you noticed] — author will fill this in after running it.
-3. **Quickstart** — exact commands to clone, install, configure, run, and expose via ngrok. Should be copy-pasteable and work first time.
-4. **Verifying it works** — a "Send test webhook" walkthrough using either Memberful's built-in test button or a sample `curl` command.
-5. **What gets logged** — show one example pretty-print block and one example JSONL line.
-6. **Security notes** — explicitly call out that this is a local dev tool, not production-grade. Note the HMAC verification, the constant-time comparison, and the rejection of unsigned requests.
-7. **Future work** — a short list. Sample ideas: SQLite storage, web dashboard, Slack/Discord forwarding, replay tool, Docker image. Mark these as "out of scope for v1."
-8. **License** — MIT.
+**Acceptance checks:**
 
-Tone: matter-of-fact, technical, no emoji-spam. One emoji in the opening title line is fine. Write like a senior engineer who built a useful thing.
-
----
-
-## Acceptance criteria
-
-The project is done when:
-
-- [ ] `pip install -r requirements.txt && python -m inspector.app` starts the server cleanly.
-- [ ] A `curl` POST with a valid signature is accepted, pretty-printed, and logged to `events.jsonl`.
-- [ ] A `curl` POST with no signature returns 401 and is logged to `events.invalid.jsonl`.
-- [ ] A `curl` POST with a wrong signature returns 401 and is logged to `events.invalid.jsonl`.
 - [ ] `pytest` passes all five signature tests.
-- [ ] README is complete, with a working quickstart and a sample output block.
-- [ ] `.env` is in `.gitignore`. `.env.example` is checked in.
-- [ ] Total LOC (excluding tests and README) is under 250 lines. If you're over, you're over-engineering.
+
+**Commit after completion:** `Add signature verification tests`
+
+### Task 8 — README and demo documentation
+
+**Priority:** P2
+
+**Goal:** Make the repo easy to run and credible as a focused portfolio project.
+
+**Deliverables:**
+
+- [ ] Complete `README.md` in the required order below.
+- [ ] Keep the tone matter-of-fact and technical.
+- [ ] Use Daryl Lundy as the author signature.
+- [ ] Keep future work clearly out of scope for v1.
+
+**Required README order:**
+
+1. One-sentence description plus a small "What it looks like" terminal screenshot or copy-pasted output block.
+2. "Why I built this" in 2–3 sentences. Frame it honestly: built during a Memberful product trial to make it easier to understand what events fire when. Include a placeholder for the specific small insight noticed after running it.
+3. Quickstart with exact clone, install, configure, run, and ngrok commands.
+4. Verification walkthrough using Memberful's built-in test button or a sample signed `curl` command.
+5. "What gets logged" with one pretty-print block and one JSONL line.
+6. Security notes that state this is a local dev tool, not production-grade, and explain HMAC verification, constant-time comparison, and unsigned request rejection.
+7. Future work marked as out of scope for v1, such as SQLite storage, web dashboard, Slack/Discord forwarding, replay tool, and Docker image.
+8. MIT license.
+
+**Acceptance checks:**
+
+- [ ] Quickstart is copy-pasteable.
+- [ ] README includes a working sample signed request or clear Memberful test-button path.
+- [ ] README includes sample terminal output and sample JSONL output.
+- [ ] README does not imply the tool is production-ready.
+
+**Commit after completion:** `Document webhook inspector usage`
+
+### Task 9 — final manual validation
+
+**Priority:** P2
+
+**Goal:** Confirm the full local workflow works end to end before calling v1 done.
+
+**Deliverables:**
+
+- [ ] Run installation and test commands.
+- [ ] Start the server with a configured secret.
+- [ ] Send a valid signed `curl` POST.
+- [ ] Send a `curl` POST with no signature.
+- [ ] Send a `curl` POST with a wrong signature.
+- [ ] Check generated JSONL files.
+- [ ] Check source LOC budget.
+
+**Acceptance checks:**
+
+- [ ] `pip install -r requirements.txt && python -m inspector.app` starts the server cleanly when configured.
+- [ ] Valid signed POST returns `200`, pretty-prints, and logs to `events.jsonl`.
+- [ ] No-signature POST returns `401` and logs to `events.invalid.jsonl`.
+- [ ] Wrong-signature POST returns `401` and logs to `events.invalid.jsonl`.
+- [ ] `pytest` passes.
+- [ ] `.env` is ignored and `.env.example` is checked in.
+- [ ] Total LOC excluding tests and README is under 250.
+
+**Commit after completion:** `Validate v1 webhook inspector workflow`
 
 ---
 
