@@ -1,0 +1,4 @@
+fastapi
+uvicorn[standard]
+rich
+python-dotenv
