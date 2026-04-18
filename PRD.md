@@ -125,51 +125,72 @@ The final priority is making the repo credible as a portfolio project and easy t
 
 ---
 
-## Tech stack
+### Task 4 — structured JSONL logging
 
-- **Language**: Python 3.11+
-- **Framework**: FastAPI + Uvicorn
-- **Dependencies**: `fastapi`, `uvicorn[standard]`, `rich` (for pretty terminal output), `python-dotenv` (for loading the signing secret)
-- **No other dependencies.** Resist the urge to add anything else.
+**Priority:** P1
 
-Rationale: FastAPI is the right pick for a webhook receiver — async, fast, trivial JSON handling. `rich` gives us color-coded, well-formatted terminal output for free. The whole thing should be ~150 lines.
+**Goal:** Preserve every webhook inspection result in append-only local files.
 
----
+**Deliverables:**
 
-## Functional requirements
+- [ ] `inspector/logger.py` with JSONL append helpers.
+- [ ] Verified events append to `LOG_FILE`, defaulting to `./events.jsonl`.
+- [ ] Invalid signature attempts append to sibling file `events.invalid.jsonl`.
+- [ ] Log directories are created when missing.
+- [ ] Verified event lines use this shape:
 
-### 1. Configuration
+```json
+{"received_at": "2026-04-19T14:23:07.412Z", "event": "subscription.created", "signature_valid": true, "payload": { "...": "full original payload" }}
+```
 
-- Load the Memberful webhook signing secret from a `.env` file at the project root, key name `MEMBERFUL_WEBHOOK_SECRET`.
-- Provide a `.env.example` file checked into the repo.
-- Server port defaults to `8000` but can be overridden by `PORT` env var.
-- Log file path defaults to `./events.jsonl` but can be overridden by `LOG_FILE` env var.
+- [ ] Invalid signature lines use this shape:
 
-### 2. The endpoint
+```json
+{"received_at": "2026-04-19T14:23:07.412Z", "reason": "invalid signature", "headers": { "...": "request headers" }}
+```
 
-- `POST /webhook` — the receiver. Accepts any JSON payload.
-- `GET /health` — returns `{"status": "ok"}`. Useful for sanity-checking via curl after starting the server.
+**Implementation notes:**
 
-### 3. Signature verification
+- `received_at` is ISO 8601 UTC with millisecond precision.
+- Use UTF-8.
+- Append only; never rewrite or truncate.
+- Do not log payloads for invalid signatures because they are untrusted.
 
-Memberful signs webhooks as follows (verified against Memberful docs):
+**Acceptance checks:**
 
-- Algorithm: **HMAC-SHA256**, computed over the **raw request body bytes**.
-- Key: the signing secret (string) shown in the Memberful dashboard after creating the webhook endpoint.
-- Encoding: hex digest, lowercase.
-- Header: `X-Memberful-Webhook-Signature`
+- [ ] Valid signed webhook creates or appends one line in `events.jsonl`.
+- [ ] Missing-signature webhook creates or appends one line in `events.invalid.jsonl`.
+- [ ] Wrong-signature webhook creates or appends one line in `events.invalid.jsonl`.
 
-Implementation rules:
+**Commit after completion:** `Add webhook JSONL logging`
 
-- Compute the expected signature over the **raw bytes** of the request body, not the parsed JSON. (FastAPI: use `await request.body()` before parsing.)
-- Compare with `hmac.compare_digest()` to avoid timing attacks. Never use `==`.
-- If the header is missing → return `401` with `{"error": "missing signature header"}`.
-- If the signature does not match → return `401` with `{"error": "invalid signature"}`. **Still log the attempt to stderr** (timestamp, source IP, header value) so the user can see suspicious activity during the demo.
-- If verification passes → continue to logging and pretty-print, then return `200` with `{"status": "ok"}`.
+### Task 5 — terminal event formatting
 
-A webhook receiver MUST respond within 15 seconds or Memberful will retry. Do not do any blocking work — log to disk and stdout, return 200, done.
+**Priority:** P1
 
-### 4. Pretty-print to terminal
+**Goal:** Make verified events easy to read in the terminal during live debugging.
+
+**Deliverables:**
+
+- [ ] `inspector/formatters.py` with event formatting dispatch.
+- [ ] `rich` output block for verified events.
+- [ ] Header includes event name from payload `event` and a local-time timestamp.
+- [ ] Body extracts the most useful 3–6 fields based on event type.
+- [ ] Unknown events are visibly marked with `[?]` and show useful top-level payload detail.
+- [ ] Footer always includes `Full payload logged to {LOG_FILE}`.
+
+**Color rules:**
+
+- [ ] `member_*` events are cyan.
+- [ ] `subscription.created`, `subscription.renewed`, and `subscription.activated` are green.
+- [ ] `subscription.updated` is yellow.
+- [ ] `subscription.deactivated` and `subscription.deleted` are red.
+- [ ] `order.purchased` is magenta.
+- [ ] `order.refunded` and `order.suspended` are red.
+- [ ] `download.*` and `plan.*` are blue.
+- [ ] Unrecognized events are white with a `[?]` prefix.
+
+**Target output:**
 
 When a verified event arrives, print the following block using `rich`:
 
@@ -187,34 +208,28 @@ When a verified event arrives, print the following block using `rich`:
 ─────────────────────────────────────────────────────
 ```
 
-Rules:
+**Acceptance checks:**
 
-- The header line includes the event name (from the `event` field in the payload) and a local-time timestamp.
-- Color-code the event name by family:
-  - `member_*` → **cyan**
-  - `subscription.*` → **green** (created/renewed/activated) or **yellow** (updated) or **red** (deactivated/deleted)
-  - `order.*` → **magenta** (purchased) or **red** (refunded/suspended)
-  - `download.*` and `plan.*` → **blue**
-  - Anything unrecognized → **white**, with a `[?]` prefix so unknown events are obvious.
-- For the body, extract and display the most useful 3–6 fields based on event type. A small dispatcher dict mapping event name → formatter function is fine. For unknown events, just dump the top-level keys with `rich.pretty.pprint`.
-- Always include "Full payload logged to {LOG_FILE}" as a dim footer hint.
+- [ ] Known event output includes event name, timestamp, extracted fields, and log-file hint.
+- [ ] Unknown event output is obvious and still useful.
+- [ ] Output is readable without requiring a web UI.
 
-### 5. Structured log file
+**Commit after completion:** `Add terminal event formatting`
 
-For every verified event, append one line to `events.jsonl` in this shape:
+### Task 6 — startup banner and operator hints
 
-```json
-{"received_at": "2026-04-19T14:23:07.412Z", "event": "subscription.created", "signature_valid": true, "payload": { ...full original payload... }}
-```
+**Priority:** P1
 
-- One JSON object per line (JSONL format), UTF-8.
-- `received_at` is ISO 8601 UTC with millisecond precision.
-- Append-only. Never rewrite or truncate.
-- If the log file doesn't exist, create it. If the directory doesn't exist, create it.
+**Goal:** Make the local tool self-explanatory when it starts.
 
-Failed signatures are also logged to a sibling file `events.invalid.jsonl` with `{"received_at": ..., "reason": "invalid signature", "headers": {...}}` (no payload, since we can't trust it).
+**Deliverables:**
 
-### 6. Startup banner
+- [ ] Print a `rich` startup banner when the server starts.
+- [ ] Show the local webhook URL with the active port.
+- [ ] Show the active log file path.
+- [ ] Show masked signing secret status, for example `********...4f2a (loaded)`.
+- [ ] Include a short ngrok hint.
+- [ ] Include a clear "waiting for events" line.
 
 When the server starts, print a banner to stdout:
 
@@ -234,9 +249,29 @@ Waiting for events…
 
 If `MEMBERFUL_WEBHOOK_SECRET` is not set, exit with a clear error message pointing to `.env.example`.
 
+**Acceptance checks:**
+
+- [ ] Banner reflects the active `PORT`.
+- [ ] Banner reflects the active `LOG_FILE`.
+- [ ] Secret is never printed in full.
+- [ ] Missing secret exits before server startup.
+
+**Commit after completion:** `Add startup banner`
+
 ---
 
-## Project structure
+## Implementation constraints
+
+### Tech stack
+
+- **Language:** Python 3.11+
+- **Framework:** FastAPI + Uvicorn
+- **Dependencies:** `fastapi`, `uvicorn[standard]`, `rich`, `python-dotenv`
+- **No other dependencies.**
+
+Rationale: FastAPI keeps webhook receiving simple, `rich` handles readable terminal output, and the full implementation should remain small enough to understand in one sitting.
+
+### Required project structure
 
 ```
 memberful-webhook-inspector/
@@ -256,6 +291,16 @@ memberful-webhook-inspector/
 ```
 
 Keep it that small. Do not add a `cli.py`, `config.py`, `models.py`, etc. unless they earn their place.
+
+### Memberful signature contract
+
+- Algorithm: **HMAC-SHA256**, computed over the **raw request body bytes**.
+- Key: the signing secret shown in the Memberful dashboard after creating the webhook endpoint.
+- Encoding: hex digest, lowercase.
+- Header: `X-Memberful-Webhook-Signature`.
+- Compare with `hmac.compare_digest()`; never use `==`.
+- Read raw bytes with `await request.body()` before JSON parsing.
+- Respond within 15 seconds so Memberful does not retry.
 
 ---
 
