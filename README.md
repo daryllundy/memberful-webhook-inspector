@@ -19,7 +19,7 @@ I built this during a Memberful product trial to make it easier to see exactly w
 ## Quickstart
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/daryllundy/memberful-webhook-inspector
 cd memberful-webhook-inspector
 python3.11 -m venv .venv
 source .venv/bin/activate
