@@ -3,3 +3,5 @@ events.jsonl
 events.invalid.jsonl
 __pycache__/
 .pytest_cache/
+.DS_Store
+webhook-demo.cast

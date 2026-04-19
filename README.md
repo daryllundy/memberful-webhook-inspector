@@ -4,19 +4,13 @@ A local FastAPI receiver that verifies, pretty-prints, and logs Memberful webhoo
 
 ## What It Looks Like
 
-```text
-─────────────────────────────────────────────────────
-  📨 subscription.created                  14:23:07
-─────────────────────────────────────────────────────
-  Member:        John Doe <john.doe@example.com>
-  Member ID:     12345
-  Plan:          Sample plan ($10.00/month)
-  Subscription:  #98765 - active, autorenew: true
-  Created:       2025-09-15T22:07:48Z
+![Memberful webhook inspector terminal demo](webhook-demo.gif)
 
-  Full payload logged to events.jsonl
-─────────────────────────────────────────────────────
-```
+The inspector verifies incoming Memberful webhooks, prints a focused terminal summary, and writes the full payload to local JSONL logs.
+
+![Verified subscription webhook summary](screenshot-01.png)
+
+![Webhook signature failure response](screenshot-02.png)
 
 ## Why I Built This
 
