@@ -4,13 +4,11 @@ A local FastAPI receiver that verifies, pretty-prints, and logs Memberful webhoo
 
 ## What It Looks Like
 
-![Memberful webhook inspector terminal demo](webhook-demo.gif)
-
 The inspector verifies incoming Memberful webhooks, prints a focused terminal summary, and writes the full payload to local JSONL logs.
 
-![Verified subscription webhook summary](screenshot-01.png)
-
 ![Webhook signature failure response](screenshot-02.png)
+
+![Verified subscription webhook summary](screenshot-01.png)
 
 ## Why I Built This
 
